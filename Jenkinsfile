@@ -1,8 +1,12 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs "NodeJS_16"   // ⚡️ le nom que tu auras défini dans Jenkins
+    }
+
     environment {
-        DOCKER_HUB_USER = 'mhd0'   // remplace par ton username Docker Hub
+        DOCKER_HUB_USER = 'mhd0'   // ton username Docker Hub
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
     }
@@ -10,7 +14,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/mhdgeek/express_mongo_react'
+                git branch: 'main', url: 'https://github.com/mhdgeek/express_mongo_react.git'
             }
         }
 
@@ -59,4 +63,3 @@ pipeline {
         }
     }
 }
-
