@@ -66,5 +66,18 @@ pipeline {
     }
 }
 
+     stage('Deploy (docker-compose)') {
+            steps {
+                // Si tu as un docker-compose.yml pour lancer Express + Mongo
+                sh 'docker-compose down || true'
+                sh 'docker-compose up -d'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline terminé !!!!!"
+        }
     }
 }
