@@ -66,13 +66,29 @@ pipeline {
     }
 }
 
-     stage('Deploy (docker-compose)') {
-    steps {
-        dir('.') {  // répertoire contenant compose.yaml
-            sh 'docker-compose -f compose.yaml down || true'
-            sh 'docker-compose -f compose.yaml pull || true'
-            sh 'docker-compose -f compose.yaml up -d'
-            sh 'docker-compose -f compose.yaml ps'
+   stage('Check Docker & Compose') {
+            steps {
+                sh 'docker --version'
+                sh 'docker-compose --version || echo "docker-compose non trouvé"'
+            }
+        }
+
+        stage('Deploy (docker-compose)') {
+            steps {
+                dir('.') {  // répertoire contenant compose.yaml
+                    sh 'docker-compose -f compose.yaml down || true'
+                    sh 'docker-compose -f compose.yaml pull || true'
+                    sh 'docker-compose -f compose.yaml up -d'
+                    sh 'docker-compose -f compose.yaml ps'
+                    sh 'docker-compose -f compose.yaml logs -f --tail=20'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline terminé !!!!!"
         }
     }
 }
