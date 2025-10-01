@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs "NodeJS_16"   // ⚡️ le nom que tu auras défini dans Jenkins
+        nodejs "NodeJS_16"   // le nom que tu auras défini dans Jenkins
     }
 
     environment {
@@ -39,8 +39,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 script {
-                    sh 'cd back-end && npm test || echo "⚠️ Aucun test backend"'
-                    sh 'cd front-end && npm test || echo "⚠️ Aucun test frontend"'
+                    sh 'cd back-end && npm test || echo "Aucun test backend"'
+                    sh 'cd front-end && npm test || echo "Aucun test frontend"'
                 }
             }
         }
