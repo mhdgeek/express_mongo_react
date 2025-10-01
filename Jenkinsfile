@@ -22,6 +22,7 @@ pipeline {
             steps {
                 dir('back-end') {
                     sh 'npm install'
+                    sh 'node -v && npm -v'
                 }
             }
         }
@@ -30,6 +31,7 @@ pipeline {
             steps {
                 dir('front-end') {
                     sh 'npm install'
+                    sh 'node -v && npm -v'
                 }
             }
         }
