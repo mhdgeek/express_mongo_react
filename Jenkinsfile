@@ -55,13 +55,16 @@ pipeline {
         }
 
         stage('Push Docker Images') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                    sh "docker push $DOCKER_HUB_USER/$FRONT_IMAGE:latest"
-                    sh "docker push $DOCKER_HUB_USER/$BACK_IMAGE:latest"
-                }
-            }
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            sh script: '''
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                docker push $DOCKER_USER/react-frontend:latest
+                docker push $DOCKER_USER/express-backend:latest
+            '''
         }
+    }
+}
+
     }
 }
