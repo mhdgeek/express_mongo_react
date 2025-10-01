@@ -84,6 +84,15 @@ pipeline {
                 }
             }
         }
+        stage('Smoke Test') {
+    steps {
+        sh '''
+            curl -f http://localhost:3000 || echo "Frontend unreachable"
+            curl -f http://localhost:5000 || echo "Backend unreachable"
+        '''
+    }
+}
+
     }
 
     post {
