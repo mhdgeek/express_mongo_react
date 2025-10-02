@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     tools {
-        nodejs "NodeJS_16"   // le nom que tu auras défini dans Jenkins
+        nodejs "NodeJS_16"
     }
 
     environment {
-        DOCKER_HUB_USER = 'mhd0'   // ton username Docker Hub
+        DOCKER_HUB_USER = 'mhd0'
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
     }
@@ -22,7 +22,6 @@ pipeline {
             steps {
                 dir('back-end') {
                     sh 'npm install'
-                    sh 'node -v && npm -v'
                 }
             }
         }
@@ -31,7 +30,6 @@ pipeline {
             steps {
                 dir('front-end') {
                     sh 'npm install'
-                    sh 'node -v && npm -v'
                 }
             }
         }
@@ -55,44 +53,47 @@ pipeline {
         }
 
         stage('Push Docker Images') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-            sh script: '''
-                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                docker push $DOCKER_USER/react-frontend:latest
-                docker push $DOCKER_USER/express-backend:latest
-            '''
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push $DOCKER_USER/react-frontend:latest
+                        docker push $DOCKER_USER/express-backend:latest
+                    '''
+                }
+            }
         }
-    }
-}
 
-   stage('Check Docker & Compose') {
+        stage('Check Docker & Compose') {
             steps {
                 sh 'docker --version'
                 sh 'docker-compose --version || echo "docker-compose non trouvé"'
             }
         }
 
-        stage('Deploy (docker-compose)') {
+        stage('Deploy (compose.yaml)') {
             steps {
-                dir('.') {  // répertoire contenant compose.yaml
+                dir('.') {  
                     sh 'docker-compose -f compose.yaml down || true'
-                    sh 'docker-compose -f compose.yaml pull || true'
+                    sh 'docker-compose -f compose.yaml pull'
                     sh 'docker-compose -f compose.yaml up -d'
                     sh 'docker-compose -f compose.yaml ps'
-                    sh 'docker-compose -f compose.yaml logs -f --tail=20'
+                    sh 'docker-compose -f compose.yaml logs --tail=50'
                 }
             }
         }
-        stage('Smoke Test') {
-    steps {
-        sh '''
-            curl -f http://localhost:3000 || echo "Frontend unreachable"
-            curl -f http://localhost:5000 || echo "Backend unreachable"
-        '''
-    }
-}
 
+        stage('Smoke Test') {
+            steps {
+                sh '''
+                    echo "🔍 Vérification Frontend (port 5173)..."
+                    curl -f http://localhost:5173 || echo "Frontend unreachable"
+
+                    echo "🔍 Vérification Backend (port 5001)..."
+                    curl -f http://localhost:5001/api || echo "Backend unreachable"
+                '''
+            }
+        }
     }
 
     post {
