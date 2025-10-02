@@ -96,9 +96,24 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            echo "Pipeline terminé !!!!!"
-        }
+   post {
+    success {
+        emailext(
+            subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "Le pipeline Jenkins a terminé avec succès.\nDétails : ${env.BUILD_URL}",
+            to: "mohamedndoye07@gmail.com",
+            from: "mohamedndoye07@gmail.com",
+            credentialsId: "sendgrid-api"
+        )
+    }
+    failure {
+        emailext(
+            subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: "Le pipeline Jenkins a échoué.\nDétails : ${env.BUILD_URL}",
+            to: "mohamedndoye07@gmail.com",
+            from: "mohamedndoye07@gmail.com",
+            credentialsId: "sendgrid-api"
+        )
     }
 }
+
