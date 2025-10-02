@@ -100,20 +100,17 @@ pipeline {
     success {
         emailext(
             subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            body: "Le pipeline Jenkins a terminé avec succès.\nDétails : ${env.BUILD_URL}",
-            to: "mohamedndoye07@gmail.com",
-            from: "mohamedndoye07@gmail.com",
-            credentialsId: "sendgrid-api"
+            body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
+            to: "mohamedndoye07@gmail.com"
         )
     }
     failure {
         emailext(
             subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            body: "Le pipeline Jenkins a échoué.\nDétails : ${env.BUILD_URL}",
-            to: "mohamedndoye07@gmail.com",
-            from: "mohamedndoye07@gmail.com",
-            credentialsId: "sendgrid-api"
+            body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
+            to: "mohamedndoye07@gmail.com"
         )
     }
 }
+
 }
