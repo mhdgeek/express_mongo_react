@@ -78,6 +78,14 @@ pipeline {
             }
         }
 
+        stages {
+        stage('Clean Docker') {
+            steps {
+                sh 'docker container prune -f'
+                sh 'docker image prune -f'
+            }
+        }
+
         stage('Check Docker & Compose') {
             steps {
                 sh 'docker --version'
@@ -100,10 +108,10 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 sh '''
-                    echo "🔍 Vérification Frontend (port 5173)..."
+                    echo " Vérification Frontend (port 5173)..."
                     curl -f http://localhost:5173 || echo "Frontend unreachable"
 
-                    echo "🔍 Vérification Backend (port 5001)..."
+                    echo " Vérification Backend (port 5001)..."
                     curl -f http://localhost:5001/api || echo "Backend unreachable"
                 '''
             }
