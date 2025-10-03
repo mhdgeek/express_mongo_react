@@ -92,6 +92,7 @@ pipeline {
                 sh 'docker-compose --version || echo "docker-compose non trouvé"'
             }
         }
+    }
 
         stage('Deploy (compose.yaml)') {
             steps {
