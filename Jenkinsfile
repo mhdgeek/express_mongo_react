@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         nodejs "NodeJS_16"
-    
+    }
 
     environment {
         DOCKER_HUB_USER = 'mhd0'
@@ -43,7 +43,7 @@ pipeline {
         stage('Install dependencies - Frontend') {
             steps {
                 dir('front-end') {
-                    sh 'npm install'
+                   
                 }
             }
         }
