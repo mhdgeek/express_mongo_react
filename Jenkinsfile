@@ -78,7 +78,7 @@ pipeline {
             }
         }
 
-        stages {
+        // on supprime les conteneur inactif dans docker container
         stage('Clean Docker') {
             steps {
                 sh 'docker container prune -f'
@@ -92,7 +92,6 @@ pipeline {
                 sh 'docker-compose --version || echo "docker-compose non trouvé"'
             }
         }
-    }
 
         stage('Deploy (compose.yaml)') {
             steps {
@@ -119,21 +118,20 @@ pipeline {
         }
     }
 
-   post {
-    success {
-        emailext(
-            subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
-            to: "mohamedndoye07@gmail.com"
-        )
+    post {
+        success {
+            emailext(
+                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
+                to: "mohamedndoye07@gmail.com"
+            )
+        }
+        failure {
+            emailext(
+                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
+                to: "mohamedndoye07@gmail.com"
+            )
+        }
     }
-    failure {
-        emailext(
-            subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
-            to: "mohamedndoye07@gmail.com"
-        )
-    }
-}
-
 }
