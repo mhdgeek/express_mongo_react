@@ -3,6 +3,7 @@ pipeline {
 
     tools {
         nodejs "NodeJS_16"
+        sonarQubeScanner "SonarScanner"
     }
 
     environment {
@@ -10,8 +11,8 @@ pipeline {
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
     }
+
     triggers {
-        // Pour que le pipeline démarre quand le webhook est reçu
         GenericTrigger(
             genericVariables: [
                 [key: 'ref', value: '$.ref'],
@@ -56,10 +57,18 @@ pipeline {
                 }
             }
         }
+
+        // -------------------- SonarQube --------------------
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube_Local') {
-                    sh 'sonar-scanner'
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.projectKey=express_mongo_react \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://host.docker.internal:9000 \
+                          -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
                 }
             }
         }
@@ -71,6 +80,7 @@ pipeline {
                 }
             }
         }
+        // ---------------------------------------------------
 
         stage('Build Docker Images') {
             steps {
@@ -93,7 +103,6 @@ pipeline {
             }
         }
 
-        // on supprime les conteneur inactif dans docker container
         stage('Clean Docker') {
             steps {
                 sh 'docker container prune -f'
@@ -101,21 +110,13 @@ pipeline {
             }
         }
 
-        stage('Check Docker & Compose') {
-            steps {
-                sh 'docker --version'
-                sh 'docker-compose --version || echo "docker-compose non trouvé"'
-            }
-        }
-
         stage('Deploy (compose.yaml)') {
             steps {
-                dir('.') {  
+                dir('.') {
                     sh 'docker-compose -f compose.yaml down || true'
                     sh 'docker-compose -f compose.yaml pull'
                     sh 'docker-compose -f compose.yaml up -d'
                     sh 'docker-compose -f compose.yaml ps'
-                    sh 'docker-compose -f compose.yaml logs --tail=50'
                 }
             }
         }
