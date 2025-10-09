@@ -1,26 +1,32 @@
 version: "3.9"
 
 services:
+  # ────────────────────────────────
+  # 🧩 FRONTEND (React)
+  # ────────────────────────────────
   frontend:
-    image: mhd0/react-frontend:latest
-    container_name: react-frontend
     build:
       context: ./front-end
+    image: mhd0/react-frontend:latest
+    container_name: react-frontend
     ports:
       - "5173:5173"
-    depends_on:
-      - backend
     environment:
       - VITE_API_URL=http://backend:5001/api
+    depends_on:
+      - backend
     networks:
       - backend-net
     restart: unless-stopped
 
+  # ────────────────────────────────
+  # ⚙️ BACKEND (Express)
+  # ────────────────────────────────
   backend:
-    image: mhd0/express-backend:latest
-    container_name: express-api
     build:
       context: ./back-end
+    image: mhd0/express-backend:latest
+    container_name: express-api
     ports:
       - "5001:5001"
     environment:
@@ -33,6 +39,9 @@ services:
       - backend-net
     restart: unless-stopped
 
+  # ────────────────────────────────
+  # 🗃️ MONGODB (Base de données du projet)
+  # ────────────────────────────────
   mongo:
     image: mongo:6.0
     container_name: mongo
@@ -47,6 +56,9 @@ services:
       - backend-net
     restart: unless-stopped
 
+  # ────────────────────────────────
+  # 🔍 SONARQUBE (Analyse de code)
+  # ────────────────────────────────
   sonarqube:
     image: sonarqube:community
     container_name: sonarqube
@@ -67,6 +79,9 @@ services:
       - backend-net
     restart: unless-stopped
 
+  # ────────────────────────────────
+  # 🐘 POSTGRESQL (DB de SonarQube)
+  # ────────────────────────────────
   sonar-db:
     image: postgres:15
     container_name: sonar-db
@@ -80,6 +95,9 @@ services:
       - backend-net
     restart: unless-stopped
 
+  # ────────────────────────────────
+  # 🧰 JENKINS (CI/CD)
+  # ────────────────────────────────
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins1
@@ -94,6 +112,9 @@ services:
       - backend-net
     restart: unless-stopped
 
+# ────────────────────────────────
+# 🧱 VOLUMES PERSISTANTS
+# ────────────────────────────────
 volumes:
   mongo_data:
   sonar_postgres_data:
@@ -101,6 +122,9 @@ volumes:
   sonarqube_extensions:
   sonarqube_logs:
 
+# ────────────────────────────────
+# 🌐 RÉSEAU COMMUN
+# ────────────────────────────────
 networks:
   backend-net:
     driver: bridge
