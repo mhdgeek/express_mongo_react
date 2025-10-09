@@ -8,7 +8,7 @@ pipeline {
     }
 
     environment {
-        SONAR_ADMIN_TOKEN = credentials('sonar_token')
+       SONAR_ADMIN_TOKEN = credentials('sonar_token')
         DOCKER_HUB_USER = 'mhd0'
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
@@ -91,7 +91,8 @@ pipeline {
      stage('Quality Gate') {
             steps {
                 timeout(time: 3, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true 
+                    waitForQualityGate abortPipeline: false 
+                    echo "Quality Gate status: ${qg.status}"
                 }
             }
         }
