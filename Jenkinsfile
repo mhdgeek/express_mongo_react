@@ -8,6 +8,7 @@ pipeline {
     }
 
     environment {
+        SONAR_ADMIN_TOKEN = credentials('sonar_token')
         DOCKER_HUB_USER = 'mhd0'
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
@@ -60,6 +61,19 @@ pipeline {
         }
 
         // -------------------- SonarQube --------------------
+        stage('Configure SonarQube Webhook') {
+    steps {
+        script {
+            echo "Configuration du webhook SonarQube vers Jenkins..."
+            sh '''
+            curl -u $SONAR_ADMIN_TOKEN: -X POST "http://sonarqube:9000/api/webhooks/create" \
+                -d "name=Jenkins_QualityGate" \
+                -d "url=http://jenkins1:8080/sonarqube-webhook/" || true
+            '''
+        }
+    }
+}
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube_Local') {
