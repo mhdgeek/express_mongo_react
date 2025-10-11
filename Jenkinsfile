@@ -85,21 +85,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 3, unit: 'MINUTES') {
-                    script {
-                        // Assignation à la variable qg
-                        def qg = waitForQualityGate(abortPipeline: false)
-                        echo "Quality Gate status: ${qg.status}"
-                        if (qg.status != 'OK') {
-                            echo "Attention: Quality Gate en erreur, pipeline continue malgré tout"
-                        }
-                    }
-                }
-            }
-        }
         // ---------------------------------------------------
 
         stage('Build Docker Images') {
