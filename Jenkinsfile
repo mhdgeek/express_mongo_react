@@ -57,36 +57,6 @@ pipeline {
                 }
             }
         }
-
-        // -------------------- SonarQube --------------------
-        stage('Configure SonarQube Webhook') {
-            steps {
-                script {
-                    echo "Configuration du webhook SonarQube vers Jenkins..."
-                    sh '''
-                    curl -u $SONAR_ADMIN_TOKEN: -X POST "http://sonarqube:9000/api/webhooks/create" \
-                        -d "name=Jenkins_QualityGate" \
-                        -d "url=http://jenkins1:8080/sonarqube-webhook/" || true
-                    '''
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube_Local') {
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.projectKey=express_mongo_react \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=http://sonarqube:9000 \
-                          -Dsonar.token=$SONAR_ADMIN_TOKEN
-                    '''
-                }
-            }
-        }
-        // ---------------------------------------------------
-
         stage('Build Docker Images') {
             steps {
                 script {
