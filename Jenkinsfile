@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        git 'Git_Default'
+       // git 'Git_Default'
         nodejs "NodeJS_16"
     }
 
