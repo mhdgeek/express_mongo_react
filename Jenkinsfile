@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-      //  SONAR_ADMIN_TOKEN = credentials('sonar_token')
+        SONAR_ADMIN_TOKEN = credentials('sonar_token')
         DOCKER_HUB_USER = 'mhd0'
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
@@ -57,6 +57,50 @@ pipeline {
                 }
             }
         }
+
+        // -------------------- SonarQube --------------------
+        stage('Configure SonarQube Webhook') {
+            steps {
+                script {
+                    echo "Configuration du webhook SonarQube vers Jenkins..."
+                    sh '''
+                    curl -u $SONAR_ADMIN_TOKEN: -X POST "http://sonarqube:9000/api/webhooks/create" \
+                        -d "name=Jenkins_QualityGate" \
+                        -d "url=http://jenkins1:8080/sonarqube-webhook/" || echo "Webhook déjà existant ou erreur ignorée"
+                    '''
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube_Local') {
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.projectKey=express_mongo_react \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://sonarqube:9000 \
+                          -Dsonar.token=$SONAR_ADMIN_TOKEN
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 3, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate(abortPipeline: false)
+                        echo "Quality Gate status: ${qg.status}"
+                        if (qg.status != 'OK') {
+                            echo " Attention: Quality Gate en erreur, le pipeline continue malgré tout."
+                        }
+                    }
+                }
+            }
+        }
+        // ---------------------------------------------------
+
         stage('Build Docker Images') {
             steps {
                 script {
