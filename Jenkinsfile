@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     tools {
+        git 'Git_Default'
         nodejs "NodeJS_16"
     }
 
@@ -29,7 +30,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/mhdgeek/express_mongo_react.git'
+                git branch: 'main',
+                    url: 'https://github.com/mhdgeek/express_mongo_react.git'
             }
         }
 
