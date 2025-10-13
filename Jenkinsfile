@@ -130,6 +130,22 @@ pipeline {
             }
         }
 
+// 🆕 --- AJOUT DU DÉPLOIEMENT KUBERNETES ICI ---
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh '''
+                    echo "Déploiement sur Kubernetes..."
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                    kubectl get pods -o wide
+                    kubectl get svc
+                    '''
+                }
+            }
+        }
+        // --- FIN AJOUT ---
+        
         stage('Smoke Test') {
             steps {
                 sh '''
