@@ -63,19 +63,19 @@ pipeline {
         // -------------------- SonarQube --------------------
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube_Local') {
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.projectKey=express_mongo_react \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=http://sonarqube:9000 \
-                          -Dsonar.token=$SONAR_ADMIN_TOKEN
-                    '''
-                }
-            }
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            sh '''
+                echo "=== Starting SonarQube Analysis ==="
+                sonar-scanner \
+                    -Dsonar.projectKey=express_mongo_react \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://sonarqube:9000 \
+                    -Dsonar.login=$SONAR_TOKEN
+            '''
         }
-
+    }
+}
         stage('Quality Gate') {
             steps {
                 timeout(time: 3, unit: 'MINUTES') {
