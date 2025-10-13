@@ -112,24 +112,6 @@ pipeline {
             }
         }
 
-        stage('Clean Docker') {
-            steps {
-                sh 'docker container prune -f'
-                sh 'docker image prune -f'
-            }
-        }
-
-        stage('Deploy (compose.yaml)') {
-            steps {
-                dir('.') {
-                    sh 'docker-compose -f compose.yaml down || true'
-                    sh 'docker-compose -f compose.yaml pull'
-                    sh 'docker-compose -f compose.yaml up -d'
-                    sh 'docker-compose -f compose.yaml ps'
-                }
-            }
-        }
-
 // 🆕 --- AJOUT DU DÉPLOIEMENT KUBERNETES ICI ---
         stage('Deploy to Kubernetes') {
             steps {
