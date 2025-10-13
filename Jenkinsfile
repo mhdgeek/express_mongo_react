@@ -61,18 +61,6 @@ pipeline {
         }
 
         // -------------------- SonarQube --------------------
-        stage('Configure SonarQube Webhook') {
-            steps {
-                script {
-                    echo "Configuration du webhook SonarQube vers Jenkins..."
-                    sh '''
-                    curl -u $SONAR_ADMIN_TOKEN: -X POST "http://sonarqube:9000/api/webhooks/create" \
-                        -d "name=Jenkins_QualityGate" \
-                        -d "url=http://jenkins1:8080/sonarqube-webhook/" || echo "Webhook déjà existant ou erreur ignorée"
-                    '''
-                }
-            }
-        }
 
         stage('SonarQube Analysis') {
             steps {
