@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        SONAR_ADMIN_TOKEN = credentials('sonar_token')
+       // SONAR_ADMIN_TOKEN = credentials('sonar_token')
         DOCKER_HUB_USER = 'mhd0'
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
