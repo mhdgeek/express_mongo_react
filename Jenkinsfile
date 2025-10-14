@@ -70,7 +70,6 @@ pipeline {
                 sonar-scanner \
                     -Dsonar.projectKey=express_mongo_react \
                     -Dsonar.sources=. \
-                    -Dsonar.host.url=http://sonarqube:9000 \
                     -Dsonar.login=$SONAR_TOKEN
             '''
         }
