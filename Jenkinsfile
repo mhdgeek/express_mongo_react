@@ -3,7 +3,7 @@ pipeline {
 
     tools {
        // git 'Git_Default'
-        nodejs "NodeJS_16"
+        nodejs "NodeJS_22"
     }
 
     environment {
