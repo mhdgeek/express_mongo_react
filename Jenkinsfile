@@ -114,18 +114,33 @@ pipeline {
 
 // 🆕 --- AJOUT DU DÉPLOIEMENT KUBERNETES ICI ---
         stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh '''
-                    echo "Déploiement sur Kubernetes..."
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
-                    kubectl get pods -o wide
-                    kubectl get svc
-                    '''
-                }
-            }
+    steps {
+        script {
+            sh '''
+            echo "Déploiement sur Kubernetes en cours..."
+
+            # Créer ou mettre à jour les ressources MongoDB
+            kubectl apply -f k8s/mongo-pvc.yaml
+            kubectl apply -f k8s/mongo-deployment.yaml
+            kubectl apply -f k8s/mongo-service.yaml
+
+            # Déploiement du backend
+            kubectl apply -f k8s/backend-deployment.yaml
+            kubectl apply -f k8s/backend-service.yaml
+
+            # Déploiement du frontend
+            kubectl apply -f k8s/frontend-deployment.yaml
+            kubectl apply -f k8s/frontend-service.yaml
+
+            echo " Vérification des ressources Kubernetes :"
+            kubectl get pods -o wide
+            kubectl get svc
+            kubectl get deployments
+            '''
         }
+    }
+}
+
         // --- FIN AJOUT ---
         
         stage('Smoke Test') {
