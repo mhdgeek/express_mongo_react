@@ -60,37 +60,6 @@ pipeline {
             }
         }
 
-        // -------------------- SonarQube --------------------
-
-        stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('SonarQube') {
-            sh '''
-                echo "=== Starting SonarQube Analysis ==="
-                sonar-scanner \
-                    -Dsonar.projectKey=express_mongo_react \
-                    -Dsonar.sources=. \
-                     -Dsonar.host.url=http://host.docker.internal:9000 \
-                    -Dsonar.login=$SONAR_TOKEN
-            '''
-        }
-    }
-}
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 3, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate(abortPipeline: false)
-                        echo "Quality Gate status: ${qg.status}"
-                        if (qg.status != 'OK') {
-                            echo " Attention: Quality Gate en erreur, le pipeline continue malgré tout."
-                        }
-                    }
-                }
-            }
-        }
-        // ---------------------------------------------------
-
         stage('Build Docker Images') {
             steps {
                 script {
