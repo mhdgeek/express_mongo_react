@@ -14,9 +14,21 @@ spec:
     spec:
       containers:
         - name: backend
-          image: mhd0/express-backend:latest
+          image: mhd0/node-backend:latest
           ports:
-            - containerPort: 5000
+            - containerPort: 3000
           env:
             - name: MONGO_URL
-              value: mongodb://mongo:27017/ma-base
+              value: "mongodb://mongo-service:27017/smartphonesdb"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP
