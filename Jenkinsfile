@@ -11,6 +11,7 @@ pipeline {
         DOCKER_HUB_USER = 'mhd0'
         FRONT_IMAGE = 'react-frontend'
         BACK_IMAGE  = 'express-backend'
+        PATH = "/usr/local/bin:${env.PATH}"
     }
 
     triggers {
