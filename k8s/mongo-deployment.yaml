@@ -14,12 +14,24 @@ spec:
     spec:
       containers:
         - name: mongo
-          image: mongo:latest
+          image: mongo:6
           ports:
             - containerPort: 27017
           volumeMounts:
-            - name: mongo-data
+            - name: mongo-storage
               mountPath: /data/db
       volumes:
-        - name: mongo-data
-          emptyDir: {}
+        - name: mongo-storage
+          emptyDir: {}  # Remplacer par un PersistentVolume si besoin
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
