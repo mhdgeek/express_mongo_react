@@ -35,7 +35,6 @@ pipeline {
             }
         }
 
-<<<<<<< HEAD
         stage('Install Dependencies') {
             parallel {
                 stage('Backend Dependencies') {
@@ -250,5 +249,3 @@ pipeline {
         }
     }
 }
-=======
->>>>>>> 5068b53 (dernier modification)
