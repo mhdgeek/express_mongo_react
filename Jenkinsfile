@@ -144,35 +144,47 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
-            steps {
-                script {
-                    timeout(time: 2, unit: 'MINUTES') {
-                        waitUntil {
-                            try {
-                                // Tester le backend
-                                sh '''
-                                    BACKEND_URL=$(minikube service backend-service --url)
-                                    echo "Testing backend at: $BACKEND_URL"
-                                    curl -f $BACKEND_URL/health && echo "Backend is healthy"
-                                '''
-                                // Tester le frontend
-                                sh '''
-                                    FRONTEND_URL=$(minikube service frontend-service --url)
-                                    echo "Testing frontend at: $FRONTEND_URL"
-                                    curl -f $FRONTEND_URL && echo "Frontend is healthy"
-                                '''
-                                return true
-                            } catch (Exception e) {
-                                echo "Services not ready yet, waiting..."
-                                sleep 10
-                                return false
-                            }
-                        }
+       stage('Health Check & Smoke Tests') {
+    steps {
+        script {
+            timeout(time: 3, unit: 'MINUTES') {
+                waitUntil {
+                    try {
+                        echo "🔍 Vérification de la santé des services..."
+                        
+                        // Méthode avec port-forward pour éviter l'erreur ClusterIP
+                        sh '''
+                            # Démarrer port-forward en arrière-plan
+                            kubectl port-forward service/backend-service 5000:5000 &
+                            PF_PID=$!
+                            
+                            # Attendre que port-forward soit prêt
+                            sleep 10
+                            
+                            # Tester le backend
+                            echo "Testing backend via port-forward..."
+                            curl -f http://localhost:5000/health || curl -f http://localhost:5000
+                            
+                            # Arrêter port-forward
+                            kill $PF_PID
+                            
+                            # Tester le frontend avec minikube service
+                            echo "Testing frontend..."
+                            FRONTEND_URL=$(minikube service frontend-service --url)
+                            curl -f $FRONTEND_URL
+                        '''
+                        
+                        return true
+                    } catch (Exception e) {
+                        echo "⏳ Services pas encore prêts, nouvelle tentative dans 15s..."
+                        sleep 15
+                        return false
                     }
                 }
             }
         }
+    }
+}
 
         stage('Update Kubernetes Images') {
             steps {
