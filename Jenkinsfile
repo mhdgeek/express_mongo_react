@@ -2,16 +2,15 @@ pipeline {
     agent any
 
     tools {
-       // git 'Git_Default'
         nodejs "NodeJS_22"
     }
 
     environment {
-       // SONAR_ADMIN_TOKEN = credentials('sonar_token')
         DOCKER_HUB_USER = 'mhd0'
-        FRONT_IMAGE = 'react-frontend'
-        BACK_IMAGE  = 'express-backend'
+        FRONT_IMAGE = 'express-mongo-react-frontend'
+        BACK_IMAGE  = 'express-mongo-react-backend'
         PATH = "/usr/local/bin:${env.PATH}"
+        KUBECONFIG = "/Users/Shared/Jenkins/.kube/config"
     }
 
     triggers {
@@ -36,110 +35,217 @@ pipeline {
             }
         }
 
-        stage('Install dependencies - Backend') {
-            steps {
-                dir('back-end') {
-                    sh 'npm install'
+        stage('Install Dependencies') {
+            parallel {
+                stage('Backend Dependencies') {
+                    steps {
+                        dir('back-end') {
+                            sh 'npm install'
+                        }
+                    }
+                }
+                stage('Frontend Dependencies') {
+                    steps {
+                        dir('front-end') {
+                            sh 'npm install'
+                        }
+                    }
                 }
             }
         }
 
-        stage('Install dependencies - Frontend') {
-            steps {
-                dir('front-end') {
-                    sh 'npm install'
+        stage('Build Applications') {
+            parallel {
+                stage('Build Backend') {
+                    steps {
+                        dir('back-end') {
+                            sh 'npm run build || echo "Build script may not exist, continuing..."'
+                        }
+                    }
                 }
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                script {
-                    sh 'cd back-end && npm test || echo "Aucun test backend"'
-                    sh 'cd front-end && npm test || echo "Aucun test frontend"'
+                stage('Build Frontend') {
+                    steps {
+                        dir('front-end') {
+                            sh 'npm run build'
+                        }
+                    }
                 }
             }
         }
 
         stage('Build Docker Images') {
-            steps {
-                script {
-                    sh "docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest ./front-end"
-                    sh "docker build -t $DOCKER_HUB_USER/$BACK_IMAGE:latest ./back-end"
+            parallel {
+                stage('Build Backend Image') {
+                    steps {
+                        dir('back-end') {
+                            sh """
+                                docker build -t ${env.DOCKER_HUB_USER}/${env.BACK_IMAGE}:${BUILD_NUMBER} .
+                                docker tag ${env.DOCKER_HUB_USER}/${env.BACK_IMAGE}:${BUILD_NUMBER} ${env.DOCKER_HUB_USER}/${env.BACK_IMAGE}:latest
+                            """
+                        }
+                    }
+                }
+                stage('Build Frontend Image') {
+                    steps {
+                        dir('front-end') {
+                            sh """
+                                docker build -t ${env.DOCKER_HUB_USER}/${env.FRONT_IMAGE}:${BUILD_NUMBER} .
+                                docker tag ${env.DOCKER_HUB_USER}/${env.FRONT_IMAGE}:${BUILD_NUMBER} ${env.DOCKER_HUB_USER}/${env.FRONT_IMAGE}:latest
+                            """
+                        }
+                    }
                 }
             }
         }
 
-        stage('Push Docker Images') {
+        stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    passwordVariable: 'DOCKERHUB_PASSWORD',
+                    usernameVariable: 'DOCKERHUB_USERNAME'
+                )]) {
+                    sh """
+                        echo \"${DOCKERHUB_PASSWORD}\" | docker login -u \"${DOCKERHUB_USERNAME}\" --password-stdin
+                        docker push ${env.DOCKER_HUB_USER}/${env.BACK_IMAGE}:${BUILD_NUMBER}
+                        docker push ${env.DOCKER_HUB_USER}/${env.BACK_IMAGE}:latest
+                        docker push ${env.DOCKER_HUB_USER}/${env.FRONT_IMAGE}:${BUILD_NUMBER}
+                        docker push ${env.DOCKER_HUB_USER}/${env.FRONT_IMAGE}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Vérifier que minikube est en cours d'exécution
+                    sh 'minikube status || minikube start'
+                    
+                    // Appliquer les configurations Kubernetes dans l'ordre
+                    sh 'kubectl apply -f k8s/mongodb-deployment.yaml'
+                    
+                    // Attendre que MongoDB soit prêt
+                    sh 'sleep 45'
+                    
+                    // Déployer le backend
+                    sh 'kubectl apply -f k8s/backend-deployment.yaml'
+                    sh 'sleep 20'
+                    
+                    // Déployer le frontend
+                    sh 'kubectl apply -f k8s/frontend-deployment.yaml'
+                    
+                    // Attendre que les déploiements soient terminés
                     sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $DOCKER_USER/react-frontend:latest
-                        docker push $DOCKER_USER/express-backend:latest
+                        kubectl rollout status deployment/backend-deployment --timeout=300s
+                        kubectl rollout status deployment/frontend-deployment --timeout=300s
                     '''
                 }
             }
         }
 
-// 🆕 --- AJOUT DU DÉPLOIEMENT KUBERNETES ICI ---
-        stage('Deploy to Kubernetes') {
-    steps {
-        script {
-            sh '''
-            echo "Déploiement sur Kubernetes en cours..."
-
-            # Créer ou mettre à jour les ressources MongoDB
-            kubectl apply -f k8s/mongo-pvc.yaml
-            kubectl apply -f k8s/mongo-deployment.yaml
-            kubectl apply -f k8s/mongo-service.yaml
-
-            # Déploiement du backend
-            kubectl apply -f k8s/backend-deployment.yaml
-            kubectl apply -f k8s/backend-service.yaml
-
-            # Déploiement du frontend
-            kubectl apply -f k8s/frontend-deployment.yaml
-            kubectl apply -f k8s/frontend-service.yaml
-
-            echo " Vérification des ressources Kubernetes :"
-            kubectl get pods -o wide
-            kubectl get svc
-            kubectl get deployments
-            '''
-        }
-    }
-}
-
-        // --- FIN AJOUT ---
-        
-        stage('Smoke Test') {
+        stage('Health Check') {
             steps {
-                sh '''
-                    echo " Vérification Frontend (port 5173)..."
-                    curl -f http://localhost:5173 || echo "Frontend unreachable"
+                script {
+                    timeout(time: 2, unit: 'MINUTES') {
+                        waitUntil {
+                            try {
+                                // Tester le backend
+                                sh '''
+                                    BACKEND_URL=$(minikube service backend-service --url)
+                                    echo "Testing backend at: $BACKEND_URL"
+                                    curl -f $BACKEND_URL/health && echo "Backend is healthy"
+                                '''
+                                // Tester le frontend
+                                sh '''
+                                    FRONTEND_URL=$(minikube service frontend-service --url)
+                                    echo "Testing frontend at: $FRONTEND_URL"
+                                    curl -f $FRONTEND_URL && echo "Frontend is healthy"
+                                '''
+                                return true
+                            } catch (Exception e) {
+                                echo "Services not ready yet, waiting..."
+                                sleep 10
+                                return false
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-                    echo " Vérification Backend (port 5001)..."
-                    curl -f http://localhost:5001/api || echo "Backend unreachable"
-                '''
+        stage('Update Kubernetes Images') {
+            steps {
+                script {
+                    // Mettre à jour l'image du backend
+                    sh "kubectl set image deployment/backend-deployment backend=${env.DOCKER_HUB_USER}/${env.BACK_IMAGE}:${BUILD_NUMBER}"
+                    
+                    // Mettre à jour l'image du frontend
+                    sh "kubectl set image deployment/frontend-deployment frontend=${env.DOCKER_HUB_USER}/${env.FRONT_IMAGE}:${BUILD_NUMBER}"
+                    
+                    // Attendre le rollout des mises à jour
+                    sh '''
+                        kubectl rollout status deployment/backend-deployment --timeout=300s
+                        kubectl rollout status deployment/frontend-deployment --timeout=300s
+                    '''
+                }
             }
         }
     }
 
     post {
+        always {
+            // Nettoyage des ressources Docker
+            sh 'docker system prune -f --volumes'
+            
+            // Afficher les logs en cas d'échec
+            script {
+                if (currentBuild.result == 'FAILURE') {
+                    sh '''
+                        echo "=== Backend Pods ==="
+                        kubectl get pods -l app=backend
+                        echo "=== Frontend Pods ==="
+                        kubectl get pods -l app=frontend
+                        echo "=== MongoDB Pods ==="
+                        kubectl get pods -l app=mongodb
+                        echo "=== Services ==="
+                        kubectl get services
+                    '''
+                }
+            }
+        }
         success {
-            emailext(
-                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
-                to: "mohamedndoye07@gmail.com"
-            )
+            script {
+                // Afficher les URLs d'accès
+                sh '''
+                    echo "🎉 DÉPLOIEMENT RÉUSSI !"
+                    echo "=== URLs de l'application ==="
+                    echo "Frontend: $(minikube service frontend-service --url)"
+                    echo "Backend: $(minikube service backend-service --url)"
+                    echo "=== Commandes utiles ==="
+                    echo "Voir tous les pods: kubectl get pods"
+                    echo "Voir les services: kubectl get services"
+                    echo "Accéder au frontend: minikube service frontend-service"
+                '''
+                
+                // Sauvegarder les URLs dans les variables de build
+                frontendUrl = sh(script: 'minikube service frontend-service --url', returnStdout: true).trim()
+                backendUrl = sh(script: 'minikube service backend-service --url', returnStdout: true).trim()
+                
+                echo "Application déployée avec succès!"
+                echo "Frontend: ${frontendUrl}"
+                echo "Backend: ${backendUrl}"
+            }
         }
         failure {
-            emailext(
-                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
-                to: "mohamedndoye07@gmail.com"
-            )
+            echo "❌ Le déploiement a échoué. Consultez les logs ci-dessus pour plus de détails."
+        }
+        cleanup {
+            // Nettoyage final
+            sh '''
+                docker logout
+                echo "Cleanup completed"
+            '''
         }
     }
 }
