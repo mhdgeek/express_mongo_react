@@ -48,3 +48,15 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
+            apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: LoadBalancer 
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
