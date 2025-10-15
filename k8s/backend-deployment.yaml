@@ -2,10 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-deployment
-  labels:
-    app: backend
 spec:
-  replicas: 2
+  replicas: 1  # Réduire à 1 pour debug
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  progressDeadlineSeconds: 600  # Augmenter le timeout
   selector:
     matchLabels:
       app: backend
@@ -21,9 +25,22 @@ spec:
         - containerPort: 5000
         env:
         - name: MONGODB_URI
-          value: "mongodb://mongodb-service:27017/mydatabase"
+          value: "mongodb://mongodb-service:27017/mydatabase?retryWrites=true&w=majority"
         - name: PORT
           value: "5000"
+        # Retirer les probes temporairement pour debug
+        # livenessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: 5000
+        #   initialDelaySeconds: 60
+        #   periodSeconds: 10
+        # readinessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: 5000
+        #   initialDelaySeconds: 30
+        #   periodSeconds: 5
         resources:
           requests:
             memory: "128Mi"
@@ -31,27 +48,3 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 5
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-spec:
-  selector:
-    app: backend
-  ports:
-    - protocol: TCP
-      port: 5000
-      targetPort: 5000
