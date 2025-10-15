@@ -10,7 +10,7 @@ pipeline {
         FRONT_IMAGE = 'express-mongo-react-frontend'
         BACK_IMAGE  = 'express-mongo-react-backend'
         PATH = "/usr/local/bin:${env.PATH}"
-        KUBECONFIG = "/Users/Shared/Jenkins/.kube/config"
+        KUBECONFIG = "/Users/mhd/.kube/config"
     }
 
     triggers {
