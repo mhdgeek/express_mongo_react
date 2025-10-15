@@ -116,33 +116,32 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    // Vérifier que minikube est en cours d'exécution
-                    sh 'minikube status || minikube start'
-                    
-                    // Appliquer les configurations Kubernetes dans l'ordre
-                    sh 'kubectl apply -f k8s/mongodb-deployment.yaml'
-                    
-                    // Attendre que MongoDB soit prêt
-                    sh 'sleep 45'
-                    
-                    // Déployer le backend
-                    sh 'kubectl apply -f k8s/backend-deployment.yaml'
-                    sh 'sleep 20'
-                    
-                    // Déployer le frontend
-                    sh 'kubectl apply -f k8s/frontend-deployment.yaml'
-                    
-                    // Attendre que les déploiements soient terminés
-                    sh '''
-                        kubectl rollout status deployment/backend-deployment --timeout=300s
-                        kubectl rollout status deployment/frontend-deployment --timeout=300s
-                    '''
-                }
-            }
+       stage('Deploy to Kubernetes') {
+    steps {
+        script {
+            echo "🚀 Déploiement MongoDB..."
+            sh 'kubectl apply -f k8s/mongodb-deployment.yaml'
+            
+            echo "⏳ Attente du démarrage de MongoDB..."
+            sh 'sleep 60'
+            
+            echo "🚀 Déploiement Backend..."
+            sh 'kubectl apply -f k8s/backend-deployment.yaml'
+            sh 'kubectl apply -f k8s/backend-service.yaml'
+            sh 'sleep 20'
+            
+            echo "🚀 Déploiement Frontend..."
+            sh 'kubectl apply -f k8s/frontend-deployment.yaml'
+            sh 'kubectl apply -f k8s/frontend-service.yaml'
+            
+            echo "⏳ Attente des déploiements..."
+            sh '''
+                kubectl rollout status deployment/backend-deployment --timeout=300s
+                kubectl rollout status deployment/frontend-deployment --timeout=300s
+            '''
         }
+    }
+}
 
        stage('Health Check & Smoke Tests') {
     steps {
