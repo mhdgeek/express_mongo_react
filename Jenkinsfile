@@ -143,7 +143,7 @@ pipeline {
     }
 }
 
-    stage('Health Check & Smoke Tests') {
+   stage('Health Check & Smoke Tests') {
     steps {
         script {
             echo "🔍 Vérification simplifiée des services..."
@@ -165,27 +165,24 @@ pipeline {
                 fi
             '''
             
-            // Test simple du backend
+            // Test du backend
             sh '''
-                echo "=== Test rapide du backend ==="
-                # Utiliser port-forward temporairement
-                timeout 30s kubectl port-forward service/backend-service 5001:5000 &
+                echo "=== Test du backend ==="
+                kubectl port-forward service/backend-service 5001:5000 2>/dev/null &
                 sleep 5
-                curl -f http://localhost:5001 || echo "Backend accessible mais avec un code différent de 200"
+                curl -s http://localhost:5001 | head -1
                 pkill -f "kubectl port-forward" 2>/dev/null || true
             '''
             
-            // Test simple du frontend - CORRIGÉ
+            // Test du frontend - SANS minikube service
             sh '''
-                echo "=== Test rapide du frontend ==="
-                FRONTEND_URL=$(minikube service frontend-service --url)
-                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
-                echo "Frontend HTTP Code: $HTTP_CODE"
-                if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
-                    echo "✅ Frontend accessible"
-                else
-                    echo "⚠️  Frontend peut avoir des problèmes (Code: $HTTP_CODE)"
-                fi
+                echo "=== Test du frontend ==="
+                # Méthode alternative sans minikube service
+                FRONTEND_PORT=$(kubectl get service frontend-service -o jsonpath='{.spec.ports[0].nodePort}')
+                MINIKUBE_IP=$(minikube ip)
+                
+                echo "Frontend URL: http://$MINIKUBE_IP:$FRONTEND_PORT"
+                curl -s -o /dev/null -w "HTTP Code: %{http_code}\n" "http://$MINIKUBE_IP:$FRONTEND_PORT" || echo "Frontend en cours de démarrage"
             '''
         }
     }
