@@ -143,7 +143,7 @@ pipeline {
     }
 }
 
-     stage('Health Check & Smoke Tests') {
+    stage('Health Check & Smoke Tests') {
     steps {
         script {
             echo "🔍 Vérification simplifiée des services..."
@@ -172,14 +172,20 @@ pipeline {
                 timeout 30s kubectl port-forward service/backend-service 5001:5000 &
                 sleep 5
                 curl -f http://localhost:5001 || echo "Backend accessible mais avec un code différent de 200"
-                pkill -f "kubectl port-forward" || true
+                pkill -f "kubectl port-forward" 2>/dev/null || true
             '''
             
-            // Test simple du frontend
+            // Test simple du frontend - CORRIGÉ
             sh '''
                 echo "=== Test rapide du frontend ==="
                 FRONTEND_URL=$(minikube service frontend-service --url)
-                curl -s -o /dev/null -w "%{http_code}" $FRONTEND_URL | grep -q "200\|302" && echo "✅ Frontend accessible" || echo "⚠️  Frontend peut avoir des problèmes"
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
+                echo "Frontend HTTP Code: $HTTP_CODE"
+                if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
+                    echo "✅ Frontend accessible"
+                else
+                    echo "⚠️  Frontend peut avoir des problèmes (Code: $HTTP_CODE)"
+                fi
             '''
         }
     }
