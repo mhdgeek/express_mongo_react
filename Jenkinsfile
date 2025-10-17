@@ -120,7 +120,8 @@ pipeline {
     steps {
         script {
             echo "🚀 Déploiement MongoDB..."
-            sh 'kubectl apply -f k8s/mongodb-deployment.yaml'
+            sh 'kubectl apply -f k8s/mongodb-deployment.yaml --validate=false'
+'
             
             echo "⏳ Attente du démarrage de MongoDB..."
             sh 'sleep 60'
